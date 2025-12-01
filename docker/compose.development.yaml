@@ -1,6 +1,52 @@
-# services:
-  # backend:
+version: '3.8'
 
-  # gateway:
+services:
 
-  # mongo:
+  mongodb:
+    image: mongo:6.0
+    container_name: hackathon-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    container_name: hackathon-backend
+    environment:
+      - PORT=${BACKEND_PORT}
+      - MONGO_URI=${MONGO_URI}
+    depends_on:
+      - mongodb
+    restart: on-failure
+    networks:
+      - app-network
+
+  gateway:
+    build:
+      context: ../gateway
+      dockerfile: Dockerfile.dev
+    container_name: hackathon-gateway
+    ports:
+
+      - "5921:8080"
+    environment:
+      - BACKEND_URL=http://backend:3800
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+
+volumes:
+  mongo_data:
+
+networks:
+  app-network:
+    driver: bridge
